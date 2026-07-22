@@ -1,0 +1,508 @@
+{
+  "name": "AI-Powered Competitor News Monitor & Weekly Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        208
+      ],
+      "id": "c480a943-9a9d-4261-9e11-aab408d97668",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are a competitive intelligence analyst for an AI/automation company. Below are recent headlines from {{ $json.sourceCount }} industry news sources ({{ $json.sourceNames }}), grouped by source. Different sources sometimes cover the exact same story (e.g. a major model launch or funding round covered by multiple outlets) — treat those as ONE story, not separate bullets.\n\nProduce a concise weekly digest with exactly two sections:\n\n1. \"Key Takeaways\" — 3 to 5 bullet points summarizing the most important distinct trends, product launches, or competitor moves. Merge duplicate/overlapping coverage across sources into a single bullet rather than repeating the same story. Each bullet should be one sentence, specific, and business-relevant.\n2. \"Why It Matters\" — 1-2 sentences on the overall implication for an AI/automation company watching this space.\n\nKeep the tone crisp and executive-ready. Do not just list headlines verbatim — synthesize, deduplicate, and interpret them.\n\nHeadlines:\n{{ $json.combinedText }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        304
+      ],
+      "id": "809ca8cd-cfdb-4f48-bd72-5e55095b9eb7",
+      "name": "AI Summarize News",
+      "credentials": {
+        "openAiApi": {
+          "id": "5wwqbrr7P1vvG5jB",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nlet summary = '';\nif (item.output && Array.isArray(item.output) && item.output[0]?.content?.[0]?.text) {\n  summary = item.output[0].content[0].text;\n} else if (typeof item.output === 'string') {\n  summary = item.output;\n} else if (item.text) {\n  summary = item.text;\n} else if (item.message?.content) {\n  summary = item.message.content;\n}\n\nconst sourceNames = $('Combine Digest').first().json.sourceNames;\nconst today = new Date().toISOString().split('T')[0];\n\nconst digest = `# Weekly Competitor & Industry News Digest\n**Date:** ${today}\n**Sources:** ${sourceNames}\n---\n\n${summary}\n\n---\n_Generated automatically by the AI News Monitor workflow._`;\n\nreturn [{ json: { digest, subject: `Weekly AI Industry Digest - ${today}` } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        304
+      ],
+      "id": "49ca3a17-fdd0-44b2-aed7-ae475476a8f6",
+      "name": "Format Digest"
+    },
+    {
+      "parameters": {
+        "sendTo": "htj2@uchicago.edu",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.digest }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2144,
+        304
+      ],
+      "id": "adc8e3db-85b7-49eb-a062-8972e10e1355",
+      "name": "Send Digest Email",
+      "webhookId": "d44aaaad-967a-4ed7-ab18-52d82ea42fe5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Nr3DUH92oO21RnCU",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "wxEQh8EN0SQLeLo0",
+          "mode": "list",
+          "cachedResultName": "source_tracker",
+          "cachedResultUrl": "/projects/WL8aTCHSSBFdOJyR/datatables/wxEQh8EN0SQLeLo0"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "active",
+              "keyValue": "true"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        208
+      ],
+      "id": "478ff531-0000-4040-b28c-7dd7a1f6e986",
+      "name": "Get Active Sources",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "wxEQh8EN0SQLeLo0",
+          "mode": "list",
+          "cachedResultName": "source_tracker",
+          "cachedResultUrl": "/projects/WL8aTCHSSBFdOJyR/datatables/wxEQh8EN0SQLeLo0"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        224,
+        208
+      ],
+      "id": "9a624b4c-062f-44db-b301-7e8d67bcf9e0",
+      "name": "Get All Sources"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        208
+      ],
+      "id": "f5e38c2e-62b8-4d92-a196-a2ccc026ceb2",
+      "name": "Fetch Feed",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const activeSources = $('Get Active Sources').all().map(i => i.json);\nconst allSources = $('Get All Sources').all().map(i => i.json);\nconst fetched = $input.all();\n\nconst SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;\nconst cutoff = Date.now() - SEVEN_DAYS_MS;\n\nfunction getEntryBlocks(xml) {\n  return xml.match(/<item[\\s\\S]*?<\\/item>/g) || xml.match(/<entry[\\s\\S]*?<\\/entry>/g) || [];\n}\nfunction extractField(block, tag) {\n  const m = block.match(new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`));\n  return m ? m[1].trim() : null;\n}\nfunction parseRecentEntries(xml) {\n  const blocks = getEntryBlocks(xml);\n  return blocks\n    .map(block => {\n      const title = extractField(block, 'title');\n      const dateStr = extractField(block, 'pubDate') || extractField(block, 'published') || extractField(block, 'updated');\n      const timestamp = dateStr ? Date.parse(dateStr) : NaN;\n      return { title, timestamp };\n    })\n    .filter(e => e.title && (isNaN(e.timestamp) || e.timestamp >= cutoff))\n    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));\n}\n\nconst updates = [];\nconst results = [];\n\nfor (let i = 0; i < activeSources.length; i++) {\n  const src = activeSources[i];\n  const xml = (fetched[i] && fetched[i].json && fetched[i].json.data) || '';\n  const recentEntries = parseRecentEntries(xml);\n  const itemCount = recentEntries.length;\n  const headlines = recentEntries.slice(0, 6).map(e => '- ' + e.title);\n\n  const newSilent = itemCount > 0 ? 0 : (src.consecutive_silent_weeks || 0) + 1;\n  let newActive = true;\n  let newMonitoring = src.monitoring;\n\n  if (itemCount === 0) {\n    if (!src.monitoring && newSilent >= 2) {\n      newMonitoring = true;\n      const nextBackup = allSources\n        .filter(s => s.pool === 'backup' && s.active === false)\n        .sort((a, b) => (a.backup_rank || 0) - (b.backup_rank || 0))[0];\n      if (nextBackup) {\n        updates.push({ json: { isUpdateRow: true, id: nextBackup.id, active: true, consecutive_silent_weeks: 0, monitoring: false, replaced_source: src.name } });\n      }\n    } else if (src.monitoring && newSilent >= 4) {\n      newActive = false;\n      newMonitoring = false;\n    }\n  } else if (src.monitoring) {\n    newMonitoring = false;\n    const replacement = allSources.find(s => s.pool === 'backup' && s.active === true && s.replaced_source === src.name);\n    if (replacement) {\n      updates.push({ json: { isUpdateRow: true, id: replacement.id, active: false, consecutive_silent_weeks: 0, monitoring: false, replaced_source: '' } });\n    }\n  }\n\n  updates.push({ json: { isUpdateRow: true, id: src.id, active: newActive, consecutive_silent_weeks: newSilent, monitoring: newMonitoring, replaced_source: src.replaced_source || '' } });\n\n  results.push({ json: { isFetchResult: true, name: src.name, itemCount, headlinesText: headlines.length ? `\\n\\n### ${src.name}\\n` + headlines.join('\\n') : `\\n\\n### ${src.name}\\n(no new articles in the last 7 days)` } });\n}\n\nreturn [...updates, ...results];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        208
+      ],
+      "id": "c0841da7-9c44-4996-b1b2-9a4aabe571e8",
+      "name": "Track Sources & Extract Headlines"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "55899020-5cc2-4ba9-8963-5e2c3967e7e9",
+              "leftValue": "={{ $json.isUpdateRow }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        112
+      ],
+      "id": "df404cd8-8827-4b4f-bd68-2e15cf8e4fb3",
+      "name": "Filter Update Rows"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "wxEQh8EN0SQLeLo0",
+          "mode": "list",
+          "cachedResultName": "source_tracker",
+          "cachedResultUrl": "/projects/WL8aTCHSSBFdOJyR/datatables/wxEQh8EN0SQLeLo0"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "active": "={{ $json.active }}",
+            "monitoring": "={{ $json.monitoring }}",
+            "consecutive_silent_weeks": "={{ $json.consecutive_silent_weeks }}",
+            "replaced_source": "={{ $json.replaced_source }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "pool",
+              "displayName": "pool",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "active",
+              "displayName": "active",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "consecutive_silent_weeks",
+              "displayName": "consecutive_silent_weeks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "monitoring",
+              "displayName": "monitoring",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "replaced_source",
+              "displayName": "replaced_source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "backup_rank",
+              "displayName": "backup_rank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1344,
+        112
+      ],
+      "id": "65e046b2-61f4-45bd-bffc-0861a0b3b3c9",
+      "name": "Update Source State"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "29bbcc0c-32d4-4d1d-b005-d258daefe738",
+              "leftValue": "={{ $json.isFetchResult }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        304
+      ],
+      "id": "8c29185e-f5cb-47e3-bff2-035960b10cb5",
+      "name": "Filter Fetch Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst sourceNames = items.map(i => i.json.name);\nconst combinedText = items.map(i => i.json.headlinesText).join('');\n\nreturn [{ json: { combinedText: combinedText.trim(), sourceNames: sourceNames.join(', '), sourceCount: items.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        304
+      ],
+      "id": "84ed6b34-9202-499c-aa35-19aa136d23c2",
+      "name": "Combine Digest"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get All Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Summarize News": {
+      "main": [
+        [
+          {
+            "node": "Format Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Digest Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Sources": {
+      "main": [
+        [
+          {
+            "node": "Fetch Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Feed": {
+      "main": [
+        [
+          {
+            "node": "Track Sources & Extract Headlines",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Track Sources & Extract Headlines": {
+      "main": [
+        [
+          {
+            "node": "Filter Update Rows",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Fetch Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Update Rows": {
+      "main": [
+        [
+          {
+            "node": "Update Source State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Fetch Results": {
+      "main": [
+        [
+          {
+            "node": "Combine Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Digest": {
+      "main": [
+        [
+          {
+            "node": "AI Summarize News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Sources": {
+      "main": [
+        [
+          {
+            "node": "Get Active Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "pinData": {}
+}
