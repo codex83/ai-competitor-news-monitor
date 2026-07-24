@@ -1,0 +1,145 @@
+{
+  "name": "News Knowledge Base Query",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "search-news",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4dcd3e0d-c3c8-4c01-b881-8d2da767e9c0",
+      "name": "Webhook",
+      "webhookId": "198f4a68-333c-4382-9565-04956829b7b8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://rxtdoixvlxxcfxybwrwi.supabase.co/rest/v1/rpc/search_articles",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_SUPABASE_SERVICE_ROLE_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query_text",
+              "value": "={{ $json.body.query }}"
+            },
+            {
+              "name": "match_count",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        0
+      ],
+      "id": "6f828f5e-bea7-4337-b0c2-9e23af26954e",
+      "name": "HTTP Request",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst articles = items\n  .map(item => item.json)\n  .filter(a => a && a.title);\n\nif (articles.length === 0) {\n  return [{ json: { count: 0, answer: \"No matching articles found.\" } }];\n}\n\nconst formatted = articles.map((a, i) =>\n  `${i+1}. [${(a.event_type || 'unknown').toUpperCase()}] ${a.title}\\n   Source: ${a.source} | Risk: ${a.threat_level}\\n   ${a.one_line}\\n   ${a.link}`\n).join('\\n\\n');\n\nreturn [{ json: {\n  count: articles.length,\n  answer: formatted\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "81fefdc5-d4d4-4706-a772-45dc44d16d5a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"count\": $json.count, \"results\": $json.answer } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        672,
+        0
+      ],
+      "id": "3abcde7e-7a80-4264-a0ad-6946f5379063",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "2f201e68-2a54-4504-bea3-d8097dd9b75b",
+  "meta": {
+    "instanceId": "ae8cdb6a57b02738fe6254df1864ef152b61814158bb202d03ffd8335d9576fa"
+  },
+  "nodeGroups": [],
+  "id": "AEVSuIbqMxtI6kxF",
+  "tags": []
+}
