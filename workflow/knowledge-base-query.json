@@ -22,17 +22,11 @@
       "parameters": {
         "method": "POST",
         "url": "https://rxtdoixvlxxcfxybwrwi.supabase.co/rest/v1/rpc/search_articles",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "YOUR_SUPABASE_SERVICE_ROLE_KEY"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
-            },
             {
               "name": "Content-Type",
               "value": "application/json"
@@ -62,7 +56,13 @@
       ],
       "id": "6f828f5e-bea7-4337-b0c2-9e23af26954e",
       "name": "HTTP Request",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "otg9ZADq6xfYq8KI",
+          "name": "Custom Auth account"
+        }
+      }
     },
     {
       "parameters": {
@@ -135,7 +135,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "2f201e68-2a54-4504-bea3-d8097dd9b75b",
+  "versionId": "d8268740-7a46-46d3-b16a-253bf0c77dc2",
   "meta": {
     "instanceId": "ae8cdb6a57b02738fe6254df1864ef152b61814158bb202d03ffd8335d9576fa"
   },

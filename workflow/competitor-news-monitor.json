@@ -445,17 +445,11 @@
       "parameters": {
         "method": "POST",
         "url": "https://rxtdoixvlxxcfxybwrwi.supabase.co/rest/v1/articles",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "YOUR_SUPABASE_SERVICE_ROLE_KEY"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
-            },
             {
               "name": "Content-Type",
               "value": "application/json"
@@ -512,7 +506,13 @@
         208
       ],
       "id": "f9a8f4d9-09a1-44d2-8d0d-e47f69ca2661",
-      "name": "HTTP Request"
+      "name": "HTTP Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "otg9ZADq6xfYq8KI",
+          "name": "Custom Auth account"
+        }
+      }
     }
   ],
   "pinData": {
@@ -698,7 +698,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "9f363054-a77f-4f21-ac67-110964513d96",
+  "versionId": "1bb69c4d-0b33-4190-a0a5-1d33d7bc762c",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ae8cdb6a57b02738fe6254df1864ef152b61814158bb202d03ffd8335d9576fa"

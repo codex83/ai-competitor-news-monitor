@@ -2,7 +2,7 @@
 
 An n8n system that watches AI/automation industry news, self-heals when a source goes dead, extracts structured facts from every article via a multi-agent LLM pipeline, stores them in a searchable knowledge base, and emails a synthesized weekly digest — no manual upkeep required.
 
-Built as a take-home exercise, then extended past the base spec to explore production concerns: **RSS feeds die and need self-healing rotation; a pile of scraped articles isn't intelligence until it's structured and queryable; and a summarizer with no eval harness is a summarizer you can't trust.**
+Built to explore a few real production concerns: **RSS feeds die and need self-healing rotation; a pile of scraped articles isn't intelligence until it's structured and queryable; and a summarizer with no eval harness is a summarizer you can't trust.**
 
 ![Workflow architecture](docs/architecture-screenshot.png)
 
@@ -20,18 +20,20 @@ A second, on-demand workflow exposes that knowledge base over a webhook: `POST /
 
 See [`docs/sample-digest.md`](docs/sample-digest.md) for a real digest from a live run, and [Knowledge base search](#knowledge-base-search) below for a live query example.
 
-## Why this is more than the base assignment
+## Design highlights
 
-The original brief asked for: a schedule trigger, ≥2 RSS sources via HTTP Request, an AI summarization step, a formatting step, and an email/Slack output. All of that is here, plus four things worth discussing in an interview — each detailed in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md):
+Four pieces worth knowing about before diving into the code — each detailed in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md):
 
 1. **Self-healing source rotation.** A Data Table (`source_tracker`) persists per-source health across scheduled runs. A source that goes quiet for 2 weeks gets a backup promoted automatically; it's dropped after 2 more silent weeks, or restored if it recovers first.
 2. **Relevance/recency scoring + multi-agent extraction.** Instead of dumping raw headlines at one big summarization prompt, articles are scored and ranked first, then each one goes through a dedicated extraction agent to produce structured facts (company / event type / amount / threat level) before a separate synthesis agent writes the digest. Structured extraction is reusable — the digest is one consumer of those facts, the knowledge base is another.
-3. **Supabase knowledge base with full-text search.** Every extracted article is persisted to Postgres with a generated `tsvector` column and a GIN index, queryable via a `search_articles` RPC (`ts_rank`-ordered). No vector DB, no embeddings API cost — n8n's free OpenAI credits don't work through HTTP Request nodes, only the dedicated OpenAI node, which rules out calling an embeddings endpoint directly without a paid key. Full-text search is the right-sized solution for this scale and gets equivalent value for a portfolio demo.
+3. **Supabase knowledge base with full-text search.** Every extracted article is persisted to Postgres with a generated `tsvector` column and a GIN index, queryable via a `search_articles` RPC (`ts_rank`-ordered). No vector DB, no embeddings API cost — n8n's free OpenAI credits don't work through HTTP Request nodes, only the dedicated OpenAI node, which rules out calling an embeddings endpoint directly without a paid key. Full-text search is the right-sized solution at this scale.
 4. **A query workflow + eval harness**, so the knowledge base isn't just a write-only side effect — it's queryable now, and its retrieval quality is checked automatically (see [Evaluation](#evaluation)).
 
 That doc also covers real bugs hit and fixed along the way, including a Data Table race condition and two separate n8n footguns in the query workflow (nodes silently skipped on zero-item input, and a stale unpublished change masking a fix) — worth reading if you want to see the debugging, not just the finished diagram.
 
 ## Knowledge base search
+
+![Knowledge base query workflow](docs/architecture-screenshot-2.png)
 
 ```bash
 curl -X POST https://htj2.app.n8n.cloud/webhook/search-news \
@@ -70,6 +72,7 @@ It's deliberately scoped to retrieval (did the right article come back), not dig
 │   └── eval_search.py                 # Retrieval-quality eval harness
 └── docs/
     ├── architecture-screenshot.png
+    ├── architecture-screenshot-2.png
     ├── ARCHITECTURE.md        # Design decisions, state machine, tradeoffs, bugs hit and fixed, what I'd change for prod
     └── sample-digest.md       # Real digest output from a live run
 ```
@@ -86,7 +89,3 @@ It's deliberately scoped to retrieval (did the right article come back), not dig
 ## Stack
 
 n8n (Data Tables, Code nodes, HTTP Request, Filter, OpenAI, Gmail, Webhook) · GPT-4o-mini (extraction + synthesis agents) · Supabase Postgres (`tsvector`/`tsquery` full-text search, no pgvector) · regex-based RSS/Atom parsing (no external dependency) · Python eval harness (stdlib only)
-
----
-
-Built with [Claude Code](https://claude.com/claude-code), driving the n8n browser UI directly — no separate chat-based design tool. Happy to walk through the build/debug session on request.
